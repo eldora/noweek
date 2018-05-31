@@ -1,4 +1,13 @@
-const CryptoJS = require("crypto-js");
+const cryptoJS = require("crypto-js"),
+    crypto = require("crypto"),
+    path = require("path"),
+    fs = require("fs"),
+    fsAccess = require('fs-access');
+
+const __PRIVATE_KEY__ = "/home/rudder/noweek/prikey.pem";
+const __BLOCKCHAIN_DIR__ = 'blocks';
+const __BLOCKCHAIN_POSTFIX__ = '.blk';
+const BLOCKCHAIN = [];
 
 const PEM = `
 -----BEGIN PUBLIC KEY-----
@@ -11,13 +20,6 @@ OrUZ/wK69Dzu4IvrN4vs9Nes8vbwPa/ddZEzGR0cQMt0JBkhk9kU/qwqUseP1QRJ
 FQIDAQAB
 -----END PUBLIC KEY-----
 `;
-
-var crypto = require("crypto");
-var path = require("path");
-var fs = require("fs");
-
-var pri = "/home/rudder/noweek/prikey.pem"
-var pub = "/home/rudder/noweek/pubkey.pem"
 
 var encryptStringWithRsaPrivateKey = function(toEncrypt, relativeOrAbsolutePathToPrivateKey) {
     var absolutePath = path.resolve(relativeOrAbsolutePathToPrivateKey);
@@ -47,7 +49,7 @@ class Block{
 }
 
 const createHash = (index, timestamp, previousHash, pubkey) =>
-  CryptoJS.SHA256(
+  cryptoJS.SHA256(
     index + timestamp + previousHash + pubkey
 ).toString();
 
@@ -59,25 +61,22 @@ const getBlocksHash = block =>
     block.pubkey
     );
 
-const getSignature = hash => encryptStringWithRsaPrivateKey(hash, pri);
+const getSignature = hash => encryptStringWithRsaPrivateKey(hash, __PRIVATE_KEY__);
 
-const setBlock = (index, timestamp, previousHash, pubkey, signingKey) => new Block(
+const getBlockchain = () => BLOCKCHAIN;
+
+const setBlock = (index, timestamp, previousHash, pubkey) => new Block(
     index,
     timestamp,
     previousHash,
     pubkey,
     createHash(index, timestamp, previousHash, pubkey),
-    getSignature(createHash(index, timestamp, previousHash, pubkey), signingKey)
+    getSignature(createHash(index, timestamp, previousHash, pubkey), __PRIVATE_KEY__)
 );
 
 const genesisBlock = setBlock(0, 1518512316, PEM, "");
 
 /// 
-var fsAccess = require('fs-access');
-
-const __BLOCKCHAIN_DIR__ = 'blocks';
-const __BLOCKCHAIN_POSTFIX__ = '.blk';
-var BLOCKCHAIN = [];
 
 // check block directory
 fsAccess(__BLOCKCHAIN_DIR__, function (err) {
@@ -135,74 +134,80 @@ function block_file2mem(block_idx){
 function block_mem2file(block_idx, block){
     file_name = __BLOCKCHAIN_DIR__ + '/' + block_idx + __BLOCKCHAIN_POSTFIX__;
     block_json = JSON.stringify(block, null, 4);
-    console.log(block_json)
 
     fs.writeFileSync(file_name, block_json);
-
-    // fs.writeFile(file_name, block_json, function(err){
-    //     if(err){
-    //             console.log("(*** Sync " + file_name + " Block fail");
-    //             return false;
-    //     }
-    //     console.log("*** Sync " + file_name + " Block success");
-    // });
-
     return true;
 }
 
-///
-const blockchain_run = () => {
-    // 내 로컬에 있는 블록 정보 로딩, 동기화
-    fileList = get_file_list();
-    for(var idx in fileList){
-        console.log("blockchain_run: " + idx);
-        console.log(block_file2mem(idx));
-    }
-}
+const blockchain_init = (pubkey) => {
+    console.log("Call blockchain_init()");
 
-const blockchain_init = (pubkeyPath, signingKey) => {
     if (BLOCKCHAIN.length !== 0) return;
 
-    pubkey = fs.readFileSync(pubkeyPath).toString();
     timestamp = new Date().getTime().toString();
 
-    newBlock = setBlock(0, timestamp, "", pubkey, signingKey);   
+    newBlock = setBlock(0, timestamp, "", pubkey);   
     BLOCKCHAIN.push(newBlock);
     block_mem2file(0, newBlock);
 
     //request: blockchain_getList
 };
 
-const blockchain_add = (pubkeyPath, signingKey) => {
-    pubkey = fs.readFileSync(pubkeyPath).toString();
+const blockchain_add = (pubkey) => {
+    console.log("Call blockchain_add()");
+
     previousIndex = BLOCKCHAIN.length - 1;
     previousBlock = BLOCKCHAIN[previousIndex];
     timestamp = new Date().getTime().toString();
     
-    newBlock = setBlock(previousIndex+1, timestamp, previousBlock.hash, pubkey, signingKey);
+    newBlock = setBlock(previousIndex+1, timestamp, previousBlock.hash, pubkey);
     BLOCKCHAIN.push(newBlock);
     block_mem2file(previousIndex+1, newBlock);
+
+    console.log(newBlock);
 
     //broadcast
 };
 
-const blockchain_getList = () => {
-    console.log("===blockchain_getList===");
-    console.log(BLOCKCHAIN);
+const blockchain_get = () => {
+    console.log("Call blockchain_get()");
+    blockchain = getBlockchain();
+
+    // console.log(blockchain);
+
+    return blockchain;
 };
 
-console.log(genesisBlock);
+/* 내 로컬에 있는 블록 정보 로딩, 동기화 */
+const blockchain_run = () => {
+    console.log("Call blockchain_run()");
 
-console.log("");
-console.log("hash: " + genesisBlock.hash);
-console.log("encryption: " + genesisBlock.signature);
-console.log("decryption: " + decryptStringWithRsaPublicKey(genesisBlock.signature, pub));
+    fileList = get_file_list();
+    for(var idx in fileList){
+        newBlock = block_file2mem(idx);
+        BLOCKCHAIN.push(newBlock);
+    }
+}
 
-blockchain_init(pub, pri);
-blockchain_add(pub, pri);
-blockchain_add(pub, pri);
-blockchain_getList();
-blockchain_run();
+// console.log(genesisBlock);
+
+// console.log("");
+// console.log("hash: " + genesisBlock.hash);
+// console.log("encryption: " + genesisBlock.signature);
+// console.log("decryption: " + decryptStringWithRsaPublicKey(genesisBlock.signature, pub));
+
+// blockchain_run();
+// blockchain_init(pub, pri);
+// blockchain_add(pub, pri);
+// blockchain_add(pub, pri);
+// blockchain_get();
+
+module.exports = {
+    blockchain_init,
+    blockchain_add,
+    blockchain_get,
+    blockchain_run
+};
 
 
 /***
