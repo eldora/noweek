@@ -152,7 +152,7 @@ function block_mem2file(block_idx, block){
 
 ///
 const blockchain_run = () => {
-    // 동기화
+    // 내 로컬에 있는 블록 정보 로딩, 동기화
     fileList = get_file_list();
     for(var idx in fileList){
         console.log("blockchain_run: " + idx);

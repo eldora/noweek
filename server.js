@@ -10,6 +10,23 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(morgan("combined"));
 
+app.route("/blocks")
+.get((req, res) => {})
+.post((req, rest) => {});
+
+
+app.post("/initBlockchain", (req, res) => {
+
+});
+
+app.post("/addBlock", (req, res) => {
+
+});
+
+app.post("/getBlockchain", (req, res) => {
+
+});
+
 const server = app.listen(PORT, () =>
   console.log(`IOTC HTTP Server running on port ${PORT} ✅`)
 );
