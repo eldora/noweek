@@ -16,7 +16,10 @@ app.route("/blocks")
 
 
 app.post("/initBlockchain", (req, res) => {
-
+    console.log("Hello, world!!");
+    console.log(req.body);
+    console.log(req.body.data);
+    res.send("Hello, world!!");
 });
 
 app.post("/addBlock", (req, res) => {
