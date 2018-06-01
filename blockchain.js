@@ -210,6 +210,7 @@ const blockchain_init = (pubkey) => {
     block_mem2file(0, newBlock);
 
     //request: broadcast_getBlockchain
+    broadcast_getBlockchain();
 };
 
 const blockchain_add = (block) => {
@@ -245,7 +246,10 @@ const blockchain_make = (pubkey) => {
     return JSON.stringify(newBlock);
 };
 
-/* 내 로컬에 있는 블록 정보 로딩, 동기화 */
+/*
+    . 내 로컬에 있는 블록 정보 로딩, 동기화
+    . broadcast
+*/
 const blockchain_run = () => {
     console.log("Call blockchain_run()");
 
@@ -255,6 +259,10 @@ const blockchain_run = () => {
         BLOCKCHAIN.push(newBlock);
     }
     console.log(BLOCKCHAIN);
+
+    //request: broadcast_getBlockchain
+    if(getLatestIndex >= 0)
+        broadcast_getBlockchain();
 }
 
 // console.log(genesisBlock);

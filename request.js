@@ -20,6 +20,8 @@ function broadcast_addBlock(publicKey){
         json: {'publicKey': publicKey}
     };
 
+    console.log(publicKey);
+
     request(options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             BASE_URL = 'http://[IP_ADDRESS]:3000/addBlock';
@@ -96,7 +98,7 @@ function request_initBlockchain(publicKey, callback){
     });
 }
 
-/*
+/* NOT USE
 name: request_addBlock
 arg1: publicKey
 arg2: callback({result:true, data: null})
