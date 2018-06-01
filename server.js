@@ -6,8 +6,10 @@ const express = require("express"),
 const Blockchain = require('./blockchain');
 const {
     blockchain_init,
+    blockchain_replace,
     blockchain_add,
     blockchain_get,
+    blockchain_make,
     blockchain_run
 } = Blockchain;
 
@@ -33,11 +35,20 @@ app.post("/initBlockchain", (req, res) => {
     res.send(res_body);
 });
 
-app.post("/addBlock", (req, res) => {
-    res_body = "addBlock complete...";
+app.post("/makeBlock", (req,res) => {
+    res_body = "makeBlock complete...";
     publicKey = req.body.publicKey;
 
-    blockchain_add(publicKey);
+    newBlock = blockchain_make(publicKey);
+
+    res.send(newBlock);
+});
+
+app.post("/addBlock", (req, res) => {
+    res_body = "addBlock complete...";
+    block = req.body.block;
+
+    blockchain_add(block);
 
     res.send(res_body);
 });
@@ -47,6 +58,16 @@ app.post("/getBlockchain", (req, res) => {
     blockchain = blockchain_get(publicKey);
 
     res.send(blockchain);
+});
+
+app.post("/replaceBlockchain", (req, res) => {
+    console.log("replaceBlockchain()");
+    res_body = "blockchain_replace complete...";
+    blockchain = req.body.blockchain;
+
+    result = blockchain_replace(blockchain);
+
+    res.send(result);
 });
 
 const server = app.listen(PORT, () =>

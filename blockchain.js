@@ -2,24 +2,22 @@ const cryptoJS = require("crypto-js"),
     crypto = require("crypto"),
     path = require("path"),
     fs = require("fs"),
-    fsAccess = require('fs-access');
+    fsAccess = require('fs-access'),
+    shell = require('shelljs');
+
+const Request = require('./request');
+const {
+    broadcast_addBlock,
+    broadcast_getBlockchain,
+    request_initBlockchain,
+    request_addBlock,
+    request_getBlockchain,
+} = Request;
 
 const __PRIVATE_KEY__ = "/home/rudder/noweek/prikey.pem";
 const __BLOCKCHAIN_DIR__ = 'blocks';
 const __BLOCKCHAIN_POSTFIX__ = '.blk';
-const BLOCKCHAIN = [];
-
-const PEM = `
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryQICCl6NZ5gDKrnSztO
-3Hy8PEUcuyvg/ikC+VcIo2SFFSf18a3IMYldIugqqqZCs4/4uVW3sbdLs/6PfgdX
-7O9D22ZiFWHPYA2k2N744MNiCD1UE+tJyllUhSblK48bn+v1oZHCM0nYQ2NqUkvS
-j+hwUU3RiWl7x3D2s9wSdNt7XUtW05a/FXehsPSiJfKvHJJnGOX0BgTvkLnkAOTd
-OrUZ/wK69Dzu4IvrN4vs9Nes8vbwPa/ddZEzGR0cQMt0JBkhk9kU/qwqUseP1QRJ
-5I1jR4g8aYPL/ke9K35PxZWuDp3U0UPAZ3PjFAh+5T+fc7gzCs9dPzSHloruU+gl
-FQIDAQAB
------END PUBLIC KEY-----
-`;
+var BLOCKCHAIN = [];
 
 var encryptStringWithRsaPrivateKey = function(toEncrypt, relativeOrAbsolutePathToPrivateKey) {
     var absolutePath = path.resolve(relativeOrAbsolutePathToPrivateKey);
@@ -29,7 +27,13 @@ var encryptStringWithRsaPrivateKey = function(toEncrypt, relativeOrAbsolutePathT
     return encrypted.toString("base64");
 };
 
-var decryptStringWithRsaPublicKey = function(toDecrypt, relativeOrAbsolutePathToPublicKey) {
+var decryptStringWithRsaPublicKey = function(toDecrypt, publicKey) {
+    var buffer = new Buffer(toDecrypt, "base64");
+    var decrypted = crypto.publicDecrypt(publicKey, buffer);
+    return decrypted.toString("utf8");
+};
+
+var decryptStringWithRsaPublicKeyPath = function(toDecrypt, relativeOrAbsolutePathToPublicKey) {
     var absolutePath = path.resolve(relativeOrAbsolutePathToPublicKey);
     var publicKey = fs.readFileSync(absolutePath, "utf8");
     var buffer = new Buffer(toDecrypt, "base64");
@@ -63,7 +67,21 @@ const getBlocksHash = block =>
 
 const getSignature = hash => encryptStringWithRsaPrivateKey(hash, __PRIVATE_KEY__);
 
+const getCurrentTimestamp = () => new Date().getTime().toString();
+
 const getBlockchain = () => BLOCKCHAIN;
+
+const getGenesisIndex = () => 0;
+const getGenesisBlockHash = () => BLOCKCHAIN[getGenesisIndex()].hash;
+const getGenesisBlockPubKey = () => BLOCKCHAIN[getGenesisIndex()].pubkey;
+
+const getLatestIndex = () => (BLOCKCHAIN.length - 1);
+const getLastBlockIndex = () => {
+    console.log("getLastBlockIndex()");
+    console.log(BLOCKCHAIN);
+    return BLOCKCHAIN[getLatestIndex()].index;
+}
+const getLastBlockHash = () => BLOCKCHAIN[getLatestIndex()].hash;
 
 const setBlock = (index, timestamp, previousHash, pubkey) => new Block(
     index,
@@ -74,9 +92,8 @@ const setBlock = (index, timestamp, previousHash, pubkey) => new Block(
     getSignature(createHash(index, timestamp, previousHash, pubkey), __PRIVATE_KEY__)
 );
 
-const genesisBlock = setBlock(0, 1518512316, PEM, "");
-
-/// 
+const createBlock = (pubkey) => setBlock(getLastBlockIndex() + 1, getCurrentTimestamp(), getLastBlockHash(), pubkey);
+const createGenesisBlock = (pubkey) => setBlock(0, getCurrentTimestamp(), "", pubkey);
 
 // check block directory
 fsAccess(__BLOCKCHAIN_DIR__, function (err) {
@@ -139,34 +156,76 @@ function block_mem2file(block_idx, block){
     return true;
 }
 
+const blockchain_isValidkey = (publicKey) => {
+    for (var i = 0; i < BLOCKCHAIN.length; i++)
+        if(BLOCKCHAIN[i].pubkey === publicKey)
+            return true;
+    return false;
+};
+
+const blockchain_replaceCheck = (blockchain) => {
+    // check longest
+    if (BLOCKCHAIN.length >= blockchain.length)
+        return false;
+
+    // check is valid
+    genesis_hash = getGenesisBlockHash();
+    genesis_pubkey = getGenesisBlockPubKey();
+    for (var i = 0; i < blockchain.length; i++){
+        if (blockchain[i].hash !== decryptStringWithRsaPublicKey(blockchain[i].signature, genesis_pubkey)){
+            console.log("decrypt: "+ decryptStringWithRsaPublicKey(blockchain[i].signature, genesis_pubkey));
+            console.log("hash: " + blockchain[i].hash);
+            return false;
+        }
+    }
+
+    return true;
+};
+
+const blockchain_replace = (blockchain) => {
+    blockchain = JSON.parse(blockchain);
+
+    if(!blockchain_replaceCheck(blockchain))
+        return false;
+    console.log("true()");
+
+    file_name = __BLOCKCHAIN_DIR__ + '/*';
+    shell.rm('-rf', file_name);
+
+    BLOCKCHAIN = blockchain;
+    for(var i = 0; i < BLOCKCHAIN.length; i++)
+        block_mem2file(i, BLOCKCHAIN[i]);
+
+    return true;
+};
+
 const blockchain_init = (pubkey) => {
     console.log("Call blockchain_init()");
 
-    if (BLOCKCHAIN.length !== 0) return;
+    file_name = __BLOCKCHAIN_DIR__ + '/*';
+    shell.rm('-rf', file_name);
 
-    timestamp = new Date().getTime().toString();
-
-    newBlock = setBlock(0, timestamp, "", pubkey);   
-    BLOCKCHAIN.push(newBlock);
+    newBlock = createGenesisBlock(pubkey);
+    BLOCKCHAIN = [newBlock];
     block_mem2file(0, newBlock);
 
-    //request: blockchain_getList
+    //request: broadcast_getBlockchain
 };
 
-const blockchain_add = (pubkey) => {
+const blockchain_add = (block) => {
     console.log("Call blockchain_add()");
 
-    previousIndex = BLOCKCHAIN.length - 1;
-    previousBlock = BLOCKCHAIN[previousIndex];
-    timestamp = new Date().getTime().toString();
-    
-    newBlock = setBlock(previousIndex+1, timestamp, previousBlock.hash, pubkey);
+    if(BLOCKCHAIN.length === 0)
+        return false;
+
+    newBlock = block;
     BLOCKCHAIN.push(newBlock);
-    block_mem2file(previousIndex+1, newBlock);
+    block_mem2file(newBlock.index, newBlock);
 
     console.log(newBlock);
 
-    //broadcast
+    //request: broadcast_getBlockchain
+    broadcast_getBlockchain();
 };
 
 const blockchain_get = () => {
@@ -178,6 +237,14 @@ const blockchain_get = () => {
     return blockchain;
 };
 
+const blockchain_make = (pubkey) => {
+    console.log("Call blockchain_make()");
+
+    newBlock = createBlock(pubkey);
+
+    return JSON.stringify(newBlock);
+};
+
 /* 내 로컬에 있는 블록 정보 로딩, 동기화 */
 const blockchain_run = () => {
     console.log("Call blockchain_run()");
@@ -187,6 +254,7 @@ const blockchain_run = () => {
         newBlock = block_file2mem(idx);
         BLOCKCHAIN.push(newBlock);
     }
+    console.log(BLOCKCHAIN);
 }
 
 // console.log(genesisBlock);
@@ -206,7 +274,10 @@ module.exports = {
     blockchain_init,
     blockchain_add,
     blockchain_get,
-    blockchain_run
+    blockchain_make,
+    blockchain_run,
+    blockchain_replace,
+    createBlock
 };
 
 
