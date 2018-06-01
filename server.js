@@ -6,10 +6,10 @@ const express = require("express"),
 const Blockchain = require('./blockchain');
 const {
     blockchain_init,
-    blockchain_replace,
+    blockchain_make,
     blockchain_add,
     blockchain_get,
-    blockchain_make,
+    blockchain_replace,
     blockchain_run
 } = Blockchain;
 
@@ -61,7 +61,6 @@ app.post("/getBlockchain", (req, res) => {
 });
 
 app.post("/replaceBlockchain", (req, res) => {
-    console.log("replaceBlockchain()");
     res_body = "blockchain_replace complete...";
     blockchain = req.body.blockchain;
 

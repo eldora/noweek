@@ -7,11 +7,9 @@ const cryptoJS = require("crypto-js"),
 
 const Request = require('./request');
 const {
+    request_initBlockchain,
     broadcast_addBlock,
     broadcast_getBlockchain,
-    request_initBlockchain,
-    request_addBlock,
-    request_getBlockchain,
 } = Request;
 
 const __PRIVATE_KEY__ = "/home/rudder/noweek/prikey.pem";
@@ -77,8 +75,6 @@ const getGenesisBlockPubKey = () => BLOCKCHAIN[getGenesisIndex()].pubkey;
 
 const getLatestIndex = () => (BLOCKCHAIN.length - 1);
 const getLastBlockIndex = () => {
-    console.log("getLastBlockIndex()");
-    console.log(BLOCKCHAIN);
     return BLOCKCHAIN[getLatestIndex()].index;
 }
 const getLastBlockHash = () => BLOCKCHAIN[getLatestIndex()].hash;
@@ -109,7 +105,6 @@ fsAccess(__BLOCKCHAIN_DIR__, function (err) {
         });
         return;
     }
-    // exist file
 });
 
 function get_last_block_number() {
@@ -117,9 +112,8 @@ function get_last_block_number() {
     var blockList = [];
     if (files.length == 0)
         return 0;
-    for (var i in files) {
+    for (var i in files)
         blockList.push(Number(files[i].split(__BLOCKCHAIN_POSTFIX__)[0]))
-    }
     blockList.sort(function(a,b) {
         return a - b;
     })
@@ -131,9 +125,8 @@ function get_file_list() {
     var blockList = [];
     if (files.length == 0)
         return 0;
-    for (var i in files) {
+    for (var i in files)
         blockList.push(Number(files[i].split(__BLOCKCHAIN_POSTFIX__)[0]))
-    }
     blockList.sort(function(a,b) {
         return a - b;
     })
@@ -165,8 +158,11 @@ const blockchain_isValidkey = (publicKey) => {
 
 const blockchain_replaceCheck = (blockchain) => {
     // check longest
-    if (BLOCKCHAIN.length >= blockchain.length)
+    if (BLOCKCHAIN.length >= blockchain.length){
+        console.log("ORG Blockchain length: " + BLOCKCHAIN.length);
+        console.log("NEW Blockchain length: " + blockchain.length);
         return false;
+    }
 
     // check is valid
     genesis_hash = getGenesisBlockHash();
@@ -187,7 +183,6 @@ const blockchain_replace = (blockchain) => {
 
     if(!blockchain_replaceCheck(blockchain))
         return false;
-    console.log("true()");
 
     file_name = __BLOCKCHAIN_DIR__ + '/*';
     shell.rm('-rf', file_name);
@@ -200,8 +195,6 @@ const blockchain_replace = (blockchain) => {
 };
 
 const blockchain_init = (pubkey) => {
-    console.log("Call blockchain_init()");
-
     file_name = __BLOCKCHAIN_DIR__ + '/*';
     shell.rm('-rf', file_name);
 
@@ -214,8 +207,6 @@ const blockchain_init = (pubkey) => {
 };
 
 const blockchain_add = (block) => {
-    console.log("Call blockchain_add()");
-
     if(BLOCKCHAIN.length === 0)
         return false;
 
@@ -223,26 +214,17 @@ const blockchain_add = (block) => {
     BLOCKCHAIN.push(newBlock);
     block_mem2file(newBlock.index, newBlock);
 
-    console.log(newBlock);
-
     //request: broadcast_getBlockchain
     broadcast_getBlockchain();
 };
 
 const blockchain_get = () => {
-    console.log("Call blockchain_get()");
     blockchain = getBlockchain();
-
-    // console.log(blockchain);
-
     return blockchain;
 };
 
 const blockchain_make = (pubkey) => {
-    console.log("Call blockchain_make()");
-
     newBlock = createBlock(pubkey);
-
     return JSON.stringify(newBlock);
 };
 
@@ -251,41 +233,24 @@ const blockchain_make = (pubkey) => {
     . broadcast
 */
 const blockchain_run = () => {
-    console.log("Call blockchain_run()");
-
     fileList = get_file_list();
     for(var idx in fileList){
         newBlock = block_file2mem(idx);
         BLOCKCHAIN.push(newBlock);
     }
-    console.log(BLOCKCHAIN);
 
     //request: broadcast_getBlockchain
     if(getLatestIndex >= 0)
         broadcast_getBlockchain();
 }
 
-// console.log(genesisBlock);
-
-// console.log("");
-// console.log("hash: " + genesisBlock.hash);
-// console.log("encryption: " + genesisBlock.signature);
-// console.log("decryption: " + decryptStringWithRsaPublicKey(genesisBlock.signature, pub));
-
-// blockchain_run();
-// blockchain_init(pub, pri);
-// blockchain_add(pub, pri);
-// blockchain_add(pub, pri);
-// blockchain_get();
-
 module.exports = {
     blockchain_init,
+    blockchain_make,
     blockchain_add,
     blockchain_get,
-    blockchain_make,
-    blockchain_run,
     blockchain_replace,
-    createBlock
+    blockchain_run
 };
 
 

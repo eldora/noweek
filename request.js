@@ -7,8 +7,6 @@ const publicKeyPath = "/home/rudder/noweek/pubkey.pem";
 const readFile = (pubkeyPath) => fs.readFileSync(pubkeyPath).toString();
 const PEM = readFile(publicKeyPath);
 
-// response 대기시간은 비동기이기 때문에 이슈없을 것이라 생각됨
-
 /**
  * @name broadcast_addBlock
  * @param publicKey
@@ -19,8 +17,6 @@ function broadcast_addBlock(publicKey){
         method: 'POST',
         json: {'publicKey': publicKey}
     };
-
-    console.log(publicKey);
 
     request(options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
@@ -55,19 +51,26 @@ function broadcast_getBlockchain(){
         ip_addr = __LOCAL_ADDRESS_BASE__ + i;
 
         options.url = BASE_URL.replace('[IP_ADDRESS]', ip_addr);
-        request(options, function (error, response, body) {
+        request(options, function (error, response, blockchain) {
             if (!error && response.statusCode == 200) {
                 // get blockchain
                 var options = {
                     url: 'http://localhost:3000/replaceBlockchain',
                     method: 'POST',
-                    json: {'blockchain': body}
+                    json: {'blockchain': blockchain}
                 };
 
-                request(options, function (error, response, body) {
+                request(options, function (error, response, result) {
                     if (!error && response.statusCode == 200) {
                         // Print out the response body
-                        console.log(body);
+                        if(result){
+                            console.log("replace blockchain...");
+                            console.log(JSON.parse(blockchain));
+                        }
+                        else{
+                            console.log("failed replace blockchain...");
+                            console.log(JSON.parse(blockchain));
+                        }
                     }
                 });
             }
@@ -88,11 +91,8 @@ function request_initBlockchain(publicKey, callback){
     };
 
     request(options, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            // Print out the response body
-            console.log(body);
+        if (!error && response.statusCode == 200)
             callback({result:true, data: null});
-        }
         else
             callback({result:false, data: null});
     });
@@ -111,11 +111,8 @@ function request_addBlock(publicKey, callback){
     };
 
     request(options, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            // Print out the response body
-            console.log(body)
+        if (!error && response.statusCode == 200)
             callback({result:true, data: null});
-        }
         else
             callback({result:false, data: null});
     });
@@ -132,11 +129,8 @@ function request_getBlockchain(callback){
     };
 
     request(options, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            // Print out the response body
-            console.log(body)
+        if (!error && response.statusCode == 200)
             callback({result:true, data: body});
-        }
         else
             callback({result:false, data: null});
     });
@@ -146,29 +140,11 @@ function callback_func(result){
     console.log(result);
 }
 
-// request_initBlockchain(PEM, callback_func);
-broadcast_addBlock(PEM);
+request_initBlockchain(PEM, callback_func);
+// broadcast_addBlock(PEM);
 
 module.exports = {
+    request_initBlockchain,
     broadcast_addBlock,
     broadcast_getBlockchain,
-    request_initBlockchain,
-    request_addBlock,
-    request_getBlockchain,
 };
-
-/***
- * JSON.parse(buffer);
- * JSON.stringify(block, null, 4);
- */
-
-/*** HELP
-# 블록체인 Trigger Address & Format
-http://[IP_ADDRESS]:3000/initBlockchain     // req.body.publicKey   <--- PEM public key
-http://[IP_ADDRESS]:3000/addBlock           // req.body.publicKey   <--- PEM public key
-http://[IP_ADDRESS]:3000/getBlockchain      // res.body             <--- Blockchain List
- */
-
-//http post: https://samwize.com/2013/08/31/simple-http-get-slash-post-request-in-node-dot-js/
-//http post: https://stackoverflow.com/questions/6158933/how-to-make-an-http-post-request-in-node-js
-//https post:http://www.codexpedia.com/node-js/node-js-making-https-post-request-with-x-www-form-urlencoded-data/
