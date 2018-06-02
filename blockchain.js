@@ -76,7 +76,7 @@ const getGenesisBlockPubKey = () => BLOCKCHAIN[getGenesisIndex()].pubkey;
 
 const getLatestIndex = () => (BLOCKCHAIN.length - 1);
 const getLatestBlock = () => BLOCKCHAIN[getLatestIndex()];
-const getLatestBlockHash = () => BLOCKCHAIN[getLatestIndex()].index;
+const getLatestBlockIndex = () => BLOCKCHAIN[getLatestIndex()].index;
 const getLatestBlockHash = () => BLOCKCHAIN[getLatestIndex()].hash;
 
 const setBlock = (index, timestamp, previousHash, pubkey) => new Block(
@@ -126,7 +126,7 @@ const isBlockStructureValid = (block) => {
     );
 };
 
-const createBlock = (pubkey) => setBlock(getLatestBlockHash() + 1, getCurrentTimestamp(), getLatestBlockHash(), pubkey);
+const createBlock = (pubkey) => setBlock(getLatestBlockIndex() + 1, getCurrentTimestamp(), getLatestBlockHash(), pubkey);
 const createGenesisBlock = (pubkey) => setBlock(0, getCurrentTimestamp(), "", pubkey);
 
 // check block directory
@@ -297,11 +297,3 @@ module.exports = {
     blockchain_clear,
     blockchain_run
 };
-
-
-/***
- * . Blockchain get 할 때, 어떤 방식으로 공유할지
- * . 적혀있는 블록+index 읽어서 메모리에 로드
- * . broadcast
- * . AWS 연동테스트
- */
