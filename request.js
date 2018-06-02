@@ -136,11 +136,10 @@ function request_getBlockchain(callback){
     });
 }
 
-function artik_led_init(color){
+function request_clearBlockchain(callback){
     var options = {
-        url: 'http://localhost:3000/artik_led_init',
-        method: 'POST',
-        json: {'color': color}
+        url: 'http://localhost:3000/clearBlockchain',
+        method: 'POST'
     };
 
     request(options, function (error, response, body) {
@@ -166,6 +165,21 @@ function artik_led_control(color, isOn){
     });
 }
 
+function artik_button_read(){
+    var options = {
+        url: 'http://localhost:3000/artik_button_read',
+        method: 'POST'
+    };
+
+    request(options, function (error, response, body) {
+        console.log(body);
+        if (!error && response.statusCode == 200)
+            callback({result:true, data: body});
+        else
+            callback({result:false, data: body});
+    });
+}
+
 function callback_func(result){
     console.log(result);
 }
@@ -173,16 +187,18 @@ function callback_func(result){
 module.exports = {
     request_initBlockchain,
     request_getBlockchain,
+    request_clearBlockchain,
     broadcast_addBlock,
     broadcast_getBlockchain,
-    artik_led_init,
-    artik_led_control
+    artik_led_control,
+    artik_button_read
 };
 
 
 /***
  * ARTIK
- * - GPIO: https://developer.artik.io/documentation/artik/tutorials/blink-an-led.html
+ * - LED: https://developer.artik.io/documentation/artik/tutorials/blink-an-led.html
+ * - BUTTON: https://developer.artik.io/documentation/artik/tutorials/read-a-button.html
  * - SEE: https://developer.artik.io/documentation/artik/advanced-concepts/prepare-dev-env.html#locating-required-software
  *        https://developer.artik.io/documentation/advanced-concepts/secure-os/secure-api.html
  *        . apt install libartik-security-dev libartik-security
