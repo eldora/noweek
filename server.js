@@ -15,6 +15,7 @@ const {
 
 const Artik = require('./artik');
 const {
+    artik_all_init,
     led_control,
     button_read
 } = Artik;
@@ -88,7 +89,7 @@ app.post("/artik_led_control", (req, res) => {
 
     color = req.body.color;
     isOn = req.body.isOn;
-    led_control(isOn);
+    led_control(color, isOn);
 
     res.send(res_body);
 });
