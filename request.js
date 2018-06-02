@@ -188,6 +188,22 @@ function artik_button_read(){
     });
 }
 
+function artik_see_write_file(callback){
+    var options = {
+        url: 'http://localhost:3000/artik_see_write_file',
+        method: 'POST'
+    };
+
+    request(options, function (error, response, body) {
+        console.log(body);
+        if (!error && response.statusCode == 200)
+            callback({result:true, data: body});
+        else
+            callback({result:false, data: body});
+    });
+}
+
+
 function callback_func(result){
     console.log(result);
 }
@@ -199,7 +215,8 @@ module.exports = {
     broadcast_addBlock,
     broadcast_getBlockchain,
     artik_led_control,
-    artik_button_read
+    artik_button_read,
+    artik_see_write_file
 };
 
 // request_initBlockchain(PEM, callback_func);
