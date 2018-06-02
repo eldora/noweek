@@ -52,10 +52,12 @@ app.post("/makeBlock", (req,res) => {
 });
 
 app.post("/addBlock", (req, res) => {
-    res_body = "addBlock complete...";
     block = req.body.block;
 
-    blockchain_add(block);
+    if(blockchain_add(block))
+        res_body = "addBlock complete...";
+    else
+        res_body = "failed addBlock...";
 
     res.send(res_body);
 });

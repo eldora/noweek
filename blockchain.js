@@ -12,6 +12,8 @@ const {
     broadcast_getBlockchain,
 } = Request;
 
+const __MAGIC_NUMBE__ = "###";
+
 const __PRIVATE_KEY__ = "/home/rudder/noweek/prikey.pem";
 const __BLOCKCHAIN_DIR__ = 'blocks';
 const __BLOCKCHAIN_POSTFIX__ = '.blk';
@@ -26,6 +28,7 @@ var encryptStringWithRsaPrivateKey = function(toEncrypt, relativeOrAbsolutePathT
 };
 
 var decryptStringWithRsaPublicKey = function(toDecrypt, publicKey) {
+    // publicKey = publicKey.split(__MAGIC_NUMBE__)[0];        // MAGIC Handler
     var buffer = new Buffer(toDecrypt, "base64");
     var decrypted = crypto.publicDecrypt(publicKey, buffer);
     return decrypted.toString("utf8");
@@ -65,7 +68,7 @@ const getBlocksHash = block =>
 
 const getSignature = hash => encryptStringWithRsaPrivateKey(hash, __PRIVATE_KEY__);
 
-const getCurrentTimestamp = () => new Date().getTime().toString();
+const getCurrentTimestamp = () => new Date().getTime();
 
 const getBlockchain = () => BLOCKCHAIN;
 
@@ -110,8 +113,8 @@ const isBlockValid = (candidateBlock, latestBlock) => {
 
 const isTimeStampValid = (newBlock, oldBlock) => {
     return (
-        int(oldBlock.timestamp) - 60 < int(newBlock.timestamp) &&
-        int(newBlock.timestamp) - 60 < int(getCurrentTimestamp())
+        oldBlock.timestamp - 60 < newBlock.timestamp &&
+        newBlock.timestamp - 60 < getCurrentTimestamp()
     );
 };
 

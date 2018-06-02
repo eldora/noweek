@@ -1,7 +1,7 @@
 const request = require('request'),
     fs = require('fs');
 
-const __LOCAL_ADDRESS_BASE__ = '192.168.0.';
+const __LOCAL_ADDRESS_BASE__ = '192.168.43.';
 
 const publicKeyPath = "/home/rudder/noweek/pubkey.pem";
 const readFile = (pubkeyPath) => fs.readFileSync(pubkeyPath).toString();
@@ -18,12 +18,12 @@ function broadcast_addBlock(publicKey){
         json: {'publicKey': publicKey}
     };
 
-    request(options, function (error, response, body) {
+    request(options, function (error, response, block) {
         if (!error && response.statusCode == 200) {
             BASE_URL = 'http://[IP_ADDRESS]:3000/addBlock';
             options = {
                 method: 'POST',
-                json: {'block': body}
+                json: {'block': block}
             };
 
             for (var i = 1; i < 255; i++){
@@ -105,16 +105,24 @@ arg2: callback({result:true, data: null})
 */
 function request_addBlock(publicKey, callback){
     var options = {
-        url: 'http://localhost:3000/addBlock',
+        url: 'http://localhost:3000/makeBlock',
         method: 'POST',
-        json: {'block': createBlock(publicKey)}
+        json: {'publicKey': publicKey}
     };
 
-    request(options, function (error, response, body) {
-        if (!error && response.statusCode == 200)
-            callback({result:true, data: null});
-        else
-            callback({result:false, data: null});
+    request(options, function (error, response, block) {
+        options = {
+            url: 'http://localhost:3000/addBlock',
+            method: 'POST',
+            json: {'block': block}
+        };
+
+        request(options, function (error, response, body) {
+            if (!error && response.statusCode == 200)
+                callback({result:true, data: null});
+            else
+                callback({result:false, data: null});
+        });
     });
 }
 
@@ -194,6 +202,8 @@ module.exports = {
     artik_button_read
 };
 
+// request_initBlockchain(PEM, callback_func);
+// broadcast_addBlock(PEM);
 
 /***
  * ARTIK
