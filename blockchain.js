@@ -28,7 +28,7 @@ var encryptStringWithRsaPrivateKey = function(toEncrypt, relativeOrAbsolutePathT
 };
 
 var decryptStringWithRsaPublicKey = function(toDecrypt, publicKey) {
-    // publicKey = publicKey.split(__MAGIC_NUMBE__)[0];        // MAGIC Handler
+    publicKey = publicKey.split(__MAGIC_NUMBE__)[0];        // MAGIC Handler
     var buffer = new Buffer(toDecrypt, "base64");
     var decrypted = crypto.publicDecrypt(publicKey, buffer);
     return decrypted.toString("utf8");
