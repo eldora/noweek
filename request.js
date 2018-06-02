@@ -136,15 +136,59 @@ function request_getBlockchain(callback){
     });
 }
 
+function artik_led_init(color){
+    var options = {
+        url: 'http://localhost:3000/artik_led_init',
+        method: 'POST',
+        json: {'color': color}
+    };
+
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200)
+            callback({result:true, data: null});
+        else
+            callback({result:false, data: null});
+    });
+}
+
+function artik_led_control(color, isOn){
+    var options = {
+        url: 'http://localhost:3000/artik_led_control',
+        method: 'POST',
+        json: {'color': color, 'isOn': isOn}
+    };
+
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200)
+            callback({result:true, data: null});
+        else
+            callback({result:false, data: null});
+    });
+}
+
 function callback_func(result){
     console.log(result);
 }
 
-request_initBlockchain(PEM, callback_func);
-// broadcast_addBlock(PEM);
-
 module.exports = {
     request_initBlockchain,
+    request_getBlockchain,
     broadcast_addBlock,
     broadcast_getBlockchain,
+    artik_led_init,
+    artik_led_control
 };
+
+
+/***
+ * ARTIK
+ * - GPIO: https://developer.artik.io/documentation/artik/tutorials/blink-an-led.html
+ * - SEE: https://developer.artik.io/documentation/artik/advanced-concepts/prepare-dev-env.html#locating-required-software
+ *        https://developer.artik.io/documentation/advanced-concepts/secure-os/secure-api.html
+ *        . apt install libartik-security-dev libartik-security
+ *
+ * TODO
+ * - ADD/REPLACE Blockchain 검증: index, previousHash, signature audit
+ * - ARTIK 기능: GPIO Interrupt, PrivateKey/PublicKey(인증서), signing 기능, LED 컨트롤
+ *
+ */

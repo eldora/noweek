@@ -13,6 +13,13 @@ const {
     blockchain_run
 } = Blockchain;
 
+const Artik = require('./artik');
+const {
+    led_init,
+    led_control,
+    set_led_init_all
+} = Artik;
+
 const PORT = process.env.HTTP_PORT || 3000;
 
 const app = express();
@@ -69,8 +76,28 @@ app.post("/replaceBlockchain", (req, res) => {
     res.send(result);
 });
 
+app.post("/artik_led_init", (req, res) => {
+    res_body = "artik_led_init complete...";
+
+    color = req.body.color;
+    led_init(color);
+
+    res.send(res_body);
+});
+
+app.post("/artik_led_control", (req, res) => {
+    res_body = "artik_led_control complete...";
+
+    color = req.body.color;
+    isOn = req.body.isOn;
+    led_control(isOn);
+
+    res.send(res_body);
+});
+
 const server = app.listen(PORT, () =>
   console.log(`IOTC HTTP Server running on port ${PORT} ✅`)
 );
 
 blockchain_run();
+set_led_init_all();
